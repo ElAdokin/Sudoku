@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1cd521d580ef0704496ed227f01396df, type: 3}
+  m_Name: SudokuData
+  m_EditorClassIdentifier: 
+  _gridData: {fileID: 11400000, guid: 198c0e171b8531c48870e56a3b3cbc81, type: 2}
+  _cellPrefab: {fileID: 8335285346437901763, guid: ead7b16e1f01b1f4dbafc9a21606caa7, type: 3}
