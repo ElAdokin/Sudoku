@@ -9,7 +9,7 @@ public class Pool
     public void AddObjectToPool(GameObject newObject)
     {
         _poolObjects.Add(newObject);
-        Debug.Log(newObject.name + " added to pool");
+        //Debug.Log(newObject.name + " added to pool");
     }
 
     public void RemoveObjectFromPool(string name)

@@ -14,14 +14,14 @@ public class Cell
     private int _randomIndex;
     private Randomizer _randomizer = new Randomizer();
 
+    public SudokuBox Box => _box;
+    public Vector2Int Position => _position;
+
     public Cell(Vector2Int position, SudokuBox box)
     {
         _position = position;
         _box = box;
     }
-
-    public SudokuBox Box => _box;
-    public Vector2Int Position => _position;
 
     public void RemoveValue(int value)
     {
@@ -51,7 +51,7 @@ public class Cell
                 if (_randomIndex < _values.Count)
                     _values.RemoveAt(_randomIndex);
 
-                _randomIndex = _randomizer.GetRamdonInt(0, _values.Count);
+                _randomIndex = _randomizer.GetRamdonInt(0, _values.Count - 1);
             }
             while (_values.Count > 0 && generator.IsValueAssigned(this, _values[_randomIndex]));
 
@@ -87,7 +87,7 @@ public class Cell
         yield break;
     }
     
-    public int GetEntrophy()
+    public int GetEntropy()
     {
         return _values.Count;
     }

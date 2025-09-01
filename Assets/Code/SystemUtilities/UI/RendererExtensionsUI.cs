@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public static class RendererExtensionsUI
 {
@@ -50,4 +52,86 @@ public static class RendererExtensionsUI
         Vector3 position = rectTransform.position;
         return new Rect(position.x - rectTransformWidth / 2f, position.y - rectTransformHeight / 2f, rectTransformWidth, rectTransformHeight);
     }
+
+	public static bool IsPointerOverUIElement()
+	{
+		return IsPointerOverUIElement(GetEventSystemRaycastResults());
+	}
+
+	public static bool IsPointerOverUIElement(Vector2 checkerPosition)
+	{
+		return IsPointerOverUIElement(GetEventSystemRaycastResults(checkerPosition));
+	}
+
+	public static GameObject UIElementOver()
+	{
+		return OverUIElement(GetEventSystemRaycastResults());
+	}
+
+	public static GameObject UIElementOver(Vector2 checkPosition)
+	{
+		return OverUIElement(GetEventSystemRaycastResults(checkPosition));
+	}
+
+	public static bool IsPointerOverUIElement(List<RaycastResult> eventSystemRaysastResults)
+	{
+		for (int index = 0; index < eventSystemRaysastResults.Count; index++)
+		{
+			RaycastResult curRaysastResult = eventSystemRaysastResults[index];
+
+			if (curRaysastResult.gameObject.layer == LayerMask.NameToLayer("UI"))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public static GameObject OverUIElement(List<RaycastResult> eventSystemRaysastResults)
+	{
+		for (int index = 0; index < eventSystemRaysastResults.Count; index++)
+		{
+			RaycastResult curRaysastResult = eventSystemRaysastResults[index];
+			if (curRaysastResult.gameObject.layer == LayerMask.NameToLayer("UI"))
+			{
+				return curRaysastResult.gameObject;
+			}
+		}
+
+		return null;
+	}
+
+	public static List<RaycastResult> GetEventSystemRaycastResults()
+	{
+		PointerEventData eventData = new PointerEventData(EventSystem.current);
+		eventData.position = Input.mousePosition;
+		List<RaycastResult> raysastResults = new List<RaycastResult>();
+		EventSystem.current.RaycastAll(eventData, raysastResults);
+		return raysastResults;
+	}
+
+	public static List<RaycastResult> GetEventSystemRaycastResults(Vector2 checkerPosition)
+	{
+		PointerEventData eventData = new PointerEventData(EventSystem.current);
+		eventData.position = checkerPosition;
+		List<RaycastResult> raysastResults = new List<RaycastResult>();
+		EventSystem.current.RaycastAll(eventData, raysastResults);
+		return raysastResults;
+	}
+
+	public static GameObject GetUIElementClicked(List<RaycastResult> eventSystemRaysastResults)
+	{
+		for (int index = 0; index < eventSystemRaysastResults.Count; index++)
+		{
+			RaycastResult curRaysastResult = eventSystemRaysastResults[index];
+
+			if (curRaysastResult.gameObject != null && curRaysastResult.gameObject.layer == LayerMask.NameToLayer("UI"))
+			{
+				return curRaysastResult.gameObject;
+			}
+		}
+
+		return null;
+	}
 }

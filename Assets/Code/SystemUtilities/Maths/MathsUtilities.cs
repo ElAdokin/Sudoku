@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEngine.RuleTile.TilingRuleOutput;
 
 public class MathsUtilities
 {
@@ -21,6 +22,19 @@ public class MathsUtilities
         }
 
         return points;
+    }
+
+    public Vector3 CalculatePointArroundUpMiddleCircle(Vector3 center, float radius)
+    {
+        float radians = Mathf.PI;
+
+        float vertical = Mathf.Sin(radians);
+        float horizontal = Mathf.Cos(radians);
+
+        Vector3 spawnDir = new Vector3(horizontal, vertical, 0);
+        Vector3 newPoint = center + spawnDir * radius;
+
+        return newPoint;
     }
 
     public float CalculateHypotenuseOfTriangle(float aSide, float bSide)
@@ -63,5 +77,71 @@ public class MathsUtilities
         Vector3 point = factor * Vector3.Normalize(endPosition - beginPosition) + beginPosition;
 
         return point;
+    }
+
+	public bool DistanceBetweenPointsLessThan(Vector3 firstPosition, Vector3 secondPosition, float distanceToCompare)
+	{
+		return Mathf.Sqrt((firstPosition - secondPosition).magnitude) < distanceToCompare * distanceToCompare;
+	}
+
+	public bool DistanceBetweenPointsLessThanOrEquals(Vector3 firstPosition, Vector3 secondPosition, float distanceToCompare)
+	{
+		return Mathf.Sqrt((firstPosition - secondPosition).magnitude) <= distanceToCompare * distanceToCompare;
+	}
+
+	public bool DistanceBetweenPointsMoreThan(Vector3 firstPosition, Vector3 secondPosition, float distanceToCompare)
+	{
+		return Mathf.Sqrt((firstPosition - secondPosition).magnitude) > distanceToCompare * distanceToCompare;
+	}
+
+	public bool DistanceBetweenPointsMoreThanOrEquals(Vector3 firstPosition, Vector3 secondPosition, float distanceToCompare)
+	{
+		return Mathf.Sqrt((firstPosition - secondPosition).magnitude) >= distanceToCompare * distanceToCompare;
+	}
+
+	public bool DistanceBetweenPointsEqualsTo(Vector3 firstPosition, Vector3 secondPosition, float distanceToCompare)
+	{
+		return Mathf.Sqrt((firstPosition - secondPosition).magnitude) == distanceToCompare * distanceToCompare;
+	}
+
+	public Vector3 CalculateBezier(Vector3 origin, Vector3 target, Vector3 startTangent, Vector3 endTanget, float time)
+	{
+		return (Mathf.Pow(1 - time, 3) * origin) + (3 * Mathf.Pow(1 - time, 2) * time * startTangent) + (3 * (1 - time) * time * time * endTanget) + (time * time * time * target);
+	}
+
+    public int CalculateDamageForCriticalHit(int criticalDamage, int damage)
+    {
+        return (int)(((float)criticalDamage) / 100 * damage);
+    }
+
+    public Vector2 WorldPositionToCanvasPosition(Camera activeCamera, RectTransform canvasRect, Vector3 worldPosition)
+    {
+        Vector2 viewportPosition = activeCamera.WorldToViewportPoint(worldPosition);
+        Vector2 worldObject_ScreenPosition = new Vector2(
+        ((viewportPosition.x * canvasRect.sizeDelta.x) - (canvasRect.sizeDelta.x * 0.5f)),
+        ((viewportPosition.y * canvasRect.sizeDelta.y) - (canvasRect.sizeDelta.y * 0.5f)));
+
+        return worldObject_ScreenPosition;
+    }
+
+    public Vector3 WorldPostionToPerspectiveCameraPosition(Camera activeCamera, Vector3 worldPosition) 
+    {
+        Vector3 cameraRelative = activeCamera.transform.InverseTransformPoint(worldPosition);
+        return cameraRelative;
+    }
+    
+    public int GetPercentageFromValue(int value, int percentage)
+    {
+        return (int)(value * percentage) / 100;
+    }
+
+    public float GetValueFromCrossMultiply(float value, float referenceValue, float compareValue)
+    {
+        return (referenceValue * compareValue) / value;
+    }
+
+    public float GetValueFromInverseCrossMultiply(float value, float referenceValue, float compareValue)
+    {
+        return (referenceValue * value) / compareValue;
     }
 }

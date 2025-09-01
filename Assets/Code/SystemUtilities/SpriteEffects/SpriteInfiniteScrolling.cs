@@ -52,6 +52,8 @@ public class SpriteInfiniteScrolling : MonoBehaviour
 
     private void Update()
     {
+        //if (LooperController.PauseGame) return;
+
         SpriteMovement();
     }
 

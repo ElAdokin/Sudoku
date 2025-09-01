@@ -42,8 +42,16 @@ public class SelectionGroupController : MonoBehaviour
         _assingCell.AssingValue(_value);
     }
 
-    public void RemoveCell() 
+    public void ClearSelection()
     {
-        AssingSelection(null, 0);
+        TurnOffToggles();
+        _value = 0;
+    }
+
+    public void DeactivateNumber(int number) 
+    {
+        if (number < 1 || number > 9) return;
+        
+        transform.GetChild(number - 1).gameObject.SetActive(false);
     }
 }

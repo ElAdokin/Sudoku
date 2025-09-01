@@ -1,18 +1,16 @@
 using System;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.UI;
 
-[RequireComponent(typeof(Image))]
 public class Fader : MonoBehaviour, IFader
 {
     private Optional<IEnumerator> _coroutine = new Optional<IEnumerator>();
     private CoroutineController _coroutineController;
 
-    private Image _fader;
+    [SerializeField] private CanvasGroup _fader;
 
     private float _fadeTime = 0;
-    private float _frameTime;
+    private const float FrameTime = .017f;
     private float _alphaAmount;
 
     private Yielders _yielders = new Yielders();
@@ -22,20 +20,17 @@ public class Fader : MonoBehaviour, IFader
     private bool _fadeEnd;
     private bool _isFadeIn;
 
-    private void Awake()
-    {
-        _fader = GetComponent<Image>();
-        _frameTime = 1f / Application.targetFrameRate;
+    public void SetAlpha(float alpha) 
+    { 
+        _fader.alpha = alpha;
     }
-    
+
     public void SetFade(bool isFadeIn, float duration)
     {
         if (_coroutine.IfPresent()) StopBehaviour();
 
         if(_fader == null)
-            _fader = GetComponent<Image>();
-
-        _frameTime = 1f / Application.targetFrameRate;
+            _fader = FindAnyObjectByType<CanvasGroup>();
 
         _fadeTime = 0;
         _fadeEnd = false;
@@ -51,59 +46,65 @@ public class Fader : MonoBehaviour, IFader
         _coroutineController.StartCurrentCoroutine();
     }
 
-    private IEnumerator FadeIn(float duration)
+    public IEnumerator FadeIn(float duration)
     {
         Debug.Log("Fade In");
 
-        _fader.color = Color.white;
-        _fader.raycastTarget = true;
+        _fader.blocksRaycasts = true;
+
+        _alphaAmount = 0;
+        
+        if(_fader.alpha != _alphaAmount)
+            _fader.alpha = _alphaAmount;
+
+        while (_fadeTime < duration)
+        {
+            _fadeTime += FrameTime;
+            _alphaAmount += FrameTime / duration;
+            _fader.alpha = _alphaAmount;
+            yield return null;
+        }
 
         _alphaAmount = 1;
 
-        while (_fadeTime < duration)
-        {
-            _fadeTime += _frameTime;
-            _alphaAmount -= _frameTime / duration;
-            _fader.color = new Color(1, 1, 1, _alphaAmount);
-            
-            yield return _yielders.EndOfFrame;
-        }
-
-        _fader.color = new Color(1, 1, 1, 0);
-        _fader.raycastTarget = false;
-
+        if (_fader.alpha != _alphaAmount)
+            _fader.alpha = _alphaAmount;
+        
         _fadeEnd = true;
-        Notify();
 
         StopBehaviour();
+
         yield break;
     }
 
-    public IEnumerator FadeOut(float duration)
+    private IEnumerator FadeOut(float duration)
     {
         Debug.Log("Fade Out");
 
-        _fader.raycastTarget = true;
-
-        _fader.color = new Color(1, 1, 1, 0);
-        _alphaAmount = 0;
+        _alphaAmount = 1;
+        
+        if (_fader.alpha != _alphaAmount)
+            _fader.alpha = _alphaAmount;
 
         while (_fadeTime < duration)
         {
-            _fadeTime += _frameTime;
-            _alphaAmount += _frameTime / duration;
-            _fader.color = new Color(1, 1, 1, _alphaAmount);
-            
-            yield return _yielders.EndOfFrame;
+            _fadeTime += FrameTime;
+            _alphaAmount -= FrameTime / duration;
+            _fader.alpha = _alphaAmount;
+            yield return null;
         }
 
-        _fader.color = Color.white;
-        _fader.raycastTarget = true;
+        _alphaAmount = 0;
 
+        if (_fader.alpha != _alphaAmount)
+            _fader.alpha = _alphaAmount;
+        
         _fadeEnd = true;
-        Notify();
+
+        _fader.blocksRaycasts = false;
 
         StopBehaviour();
+        
         yield break;
     }
 
@@ -111,9 +112,11 @@ public class Fader : MonoBehaviour, IFader
     {
         if (_coroutine.IfPresent())
         {
-            _coroutineController.StopCurrentCoroutine();
+            _coroutineController?.StopCurrentCoroutine();
             _coroutine = new Optional<IEnumerator>();
         }
+
+        Notify();
     }
 
     private void Notify()

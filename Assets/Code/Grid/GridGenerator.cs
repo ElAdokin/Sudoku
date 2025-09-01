@@ -7,7 +7,8 @@ using UnityEngine.UI;
 public class GridGenerator : MonoBehaviour
 {
     private SudokuData _sudokuData;
-    
+    private SudokuController _sudokuController;
+
     private GridData _gridData;
 
     public CellView[] _cellObjects;
@@ -16,10 +17,15 @@ public class GridGenerator : MonoBehaviour
     private Cell[,] _cells;
     private CellView[,] _cellsViews;
 
-    [SerializeField] private List<Vector2Int> _staticCells = new List<Vector2Int>();
+    private List<Vector2Int> _staticCells = new List<Vector2Int>();
 
     private int _randomNumber;
-    private int _staticNumbers = 25;
+    
+    private int _staticNumbers;
+    private readonly Vector2Int _easyNumbers = new Vector2Int(29, 35);
+    private readonly Vector2Int _mediumNumbers = new Vector2Int(23, 29);
+    private readonly Vector2Int _hardNumbers = new Vector2Int(19, 23);
+    
     private int _staticCellsForBox;
     private List<int> _staticIndexes = new List<int>();
     private List<int> _randomIndexesForRest = new List<int>();
@@ -32,7 +38,6 @@ public class GridGenerator : MonoBehaviour
 
     private Vector2Int[] _selectedBox = new Vector2Int[9];
 
-    
     private readonly Vector2Int[] _upLeft = { new Vector2Int(0, 8), new Vector2Int(1, 8), new Vector2Int(2, 8), new Vector2Int(0, 7), new Vector2Int(1, 7), new Vector2Int(2, 7), new Vector2Int(0, 6), new Vector2Int(1, 6), new Vector2Int(2, 6) };
     private readonly Vector2Int[] _up = { new Vector2Int(3, 8), new Vector2Int(4, 8), new Vector2Int(5, 8), new Vector2Int(3, 7), new Vector2Int(4, 7), new Vector2Int(5, 7), new Vector2Int(3, 6), new Vector2Int(4, 6), new Vector2Int(5, 6) };
     private readonly Vector2Int[] _upRight = { new Vector2Int(6, 8), new Vector2Int(7, 8), new Vector2Int(8, 8), new Vector2Int(6, 7), new Vector2Int(7, 7), new Vector2Int(8, 7), new Vector2Int(6, 6), new Vector2Int(7, 6), new Vector2Int(8, 6) };
@@ -52,12 +57,15 @@ public class GridGenerator : MonoBehaviour
 
     private SelectionGroupController _selectionGroupController;
 
-    public IEnumerator InitializeGridGenerator(SudokuData data) 
-    {
-        _sudokuData = data;
-        _gridData = data.GridData;
+    private List<CellView> _cellsToCheck = new List<CellView>();
 
-        Debug.Log(_cellObjects.Length);
+    private List<int> _solveCheckerList = new List<int>();
+
+    public IEnumerator InitializeGridGenerator(SudokuController sudokuController) 
+    {
+        _sudokuController = sudokuController;
+        _sudokuData = _sudokuController.SudokuData;
+        _gridData = _sudokuData.GridData;
 
         _selectionGroupController = FindObjectOfType<SelectionGroupController>();
         GameObject.Find("CheckButton").GetComponent<Button>().onClick.AddListener(() => CheckSudoku());
@@ -80,17 +88,25 @@ public class GridGenerator : MonoBehaviour
 
         yield return CreateCellsViews();
 
-        if (_sudokuData.CheckFileExistance())
+        if (_sudokuController.StateController.CheckStateExistance())
         {
-            yield return _sudokuData.LoadSudoku();
-            
-            yield return AssingSudokuValues(_sudokuData.NextSudoku);
+            yield return _sudokuController.StateController.LoadState();
 
-            yield return SelectStaticCells();
+            yield return AssingSudokuValues(_sudokuController.StateController.State.Sudoku);
+
+            yield return AssingStaticCells();
 
             yield return CleanSudoku();
 
-            GetComponent<GameInstaller>().InitializeSceneController();
+            yield return AssingCorrectValues();
+
+            if (_sudokuController.RemoveSolveNumbers)
+                yield return CheckForRemoveSelectionNumbers();
+
+            GetComponent<GameInstaller>().StartGame();
+
+            if (_sudokuController.SavedSudokuController.CheckNextSudokuExistance())
+                yield break;
 
             yield return CreateCells();
 
@@ -98,25 +114,53 @@ public class GridGenerator : MonoBehaviour
 
             yield return AssingNextSudokuValues();
 
-            yield return _sudokuData.SaveSudoku();
+            yield return _sudokuController.SavedSudokuController.SaveSudoku();
         }
-        else 
+        else
         {
-            yield return CreateCells();
 
-            yield return GenerateSudoku();
+            if (_sudokuController.SavedSudokuController.CheckNextSudokuExistance())
+            {
+                yield return _sudokuController.SavedSudokuController.LoadSudoku();
 
-            yield return AssingSudokuValuesFromCells();
-            
-            yield return AssingNextSudokuValues();
+                yield return AssingSudokuValues(_sudokuController.SavedSudokuController.NextSudoku);
 
-            yield return SelectStaticCells();
+                yield return SelectStaticCells();
 
-            yield return CleanSudoku();
+                yield return CleanSudoku();
 
-            yield return _sudokuData.SaveSudoku();
+                yield return _sudokuController.StateController.SaveState();
 
-            GetComponent<GameInstaller>().InitializeSceneController();
+                GetComponent<GameInstaller>().StartGame();
+
+                yield return CreateCells();
+
+                yield return GenerateSudoku();
+
+                yield return AssingNextSudokuValues();
+
+                yield return _sudokuController.SavedSudokuController.SaveSudoku();
+            }
+            else
+            {
+                yield return AssingSudokuValues(_sudokuData.InitialSudoku);
+
+                yield return SelectStaticCells();
+
+                yield return CleanSudoku();
+
+                yield return _sudokuController.StateController.SaveState();
+
+                GetComponent<GameInstaller>().StartGame();
+
+                yield return CreateCells();
+
+                yield return GenerateSudoku();
+
+                yield return AssingNextSudokuValues();
+
+                yield return _sudokuController.SavedSudokuController.SaveSudoku();
+            }
         }
 
         yield break;
@@ -131,7 +175,7 @@ public class GridGenerator : MonoBehaviour
                 _indexObject = (x * _cellsViews.GetLength(0)) + y;
                 _cellsViews[x, y] = _cellObjects[_indexObject];
                 _cellsViews[x, y].gameObject.name = "Cell_" + x.ToString() + "_" + y.ToString();
-                _cellsViews[x, y].Initialize();
+                _cellsViews[x, y].Initialize(this, new Vector2Int(x,y));
             }
         }
 
@@ -146,6 +190,13 @@ public class GridGenerator : MonoBehaviour
             {
                 _cellsViews[x, y].AssingCorrectValue(_values[(y * 9) + x]);
             }
+        }
+
+        if (_sudokuController.StateController.State.Sudoku.Count > 0) yield break;
+
+        for (int i = 0; i < _values.Count; i++)
+        {
+            _sudokuController.StateController.State.Sudoku.Add(_values[i]);
         }
 
         yield break;
@@ -179,22 +230,20 @@ public class GridGenerator : MonoBehaviour
 
     private IEnumerator AssingNextSudokuValues()
     {
-        _sudokuData.NextSudoku.Clear();
+        _sudokuController.SavedSudokuController.NextSudoku.Clear();
 
         for (int x = 0; x < _cells.GetLength(0); x++)
         {
             for (int y = 0; y < _cells.GetLength(1); y++)
             {
-                _sudokuData.NextSudoku.Add(_cells[x,y].GetCorrectValue());
+                _sudokuController.SavedSudokuController.NextSudoku.Add(_cells[x,y].GetCorrectValue());
             }
         }
-
-        
 
         yield break;
     }
 
-    public IEnumerator GenerateSudoku()
+    private IEnumerator GenerateSudoku()
     {
         _reRollCounter = 0;
 
@@ -210,7 +259,7 @@ public class GridGenerator : MonoBehaviour
                 {
                     for (int j = 0; j < _selectedBox.Length; j++)
                     {
-                        if (_cells[_selectedBox[j].x, _selectedBox[j].y].GetEntrophy() == e)
+                        if (_cells[_selectedBox[j].x, _selectedBox[j].y].GetEntropy() == e)
                         {
                             yield return _cells[_selectedBox[j].x, _selectedBox[j].y].Collapse(this);
                             yield return ClearValueFromSodoku(_cells[_selectedBox[j].x, _selectedBox[j].y]);
@@ -271,7 +320,7 @@ public class GridGenerator : MonoBehaviour
     {
         for (int j = 0; j < _selectedBox.Length; j++)
         {
-            if (_cells[_selectedBox[j].x, _selectedBox[j].y].GetEntrophy() != 0) return false;
+            if (_cells[_selectedBox[j].x, _selectedBox[j].y].GetEntropy() != 0) return false;
         }
 
         return true;
@@ -483,6 +532,8 @@ public class GridGenerator : MonoBehaviour
             0,1,2,3,4,5,6,7,8
         };
 
+        _staticNumbers = GetStaticNumbersByDifficulty();
+
         _staticCellsForBox = _staticNumbers / 9;
 
         if (_staticNumbers % 9 == 0)
@@ -560,7 +611,39 @@ public class GridGenerator : MonoBehaviour
 
             _staticIndexes.Clear();
         }
-        
+
+        _sudokuController.StateController.State.StaticCells.Clear();
+
+        foreach (Vector2Int staticCell in _staticCells)
+            _sudokuController.StateController.State.StaticCells.Add(staticCell);
+
+        yield break;
+    }
+
+    private int GetStaticNumbersByDifficulty()
+    {
+        switch (_sudokuController.Difficulty) 
+        {
+            case 0:
+                return Random.Range(_easyNumbers.x, _easyNumbers.y);
+            case 1:
+                return Random.Range(_mediumNumbers.x, _mediumNumbers.y);
+            case 2:
+                return Random.Range(_hardNumbers.x, _hardNumbers.y);
+        }
+
+        return _easyNumbers.y;
+    }
+
+    private IEnumerator AssingStaticCells()
+    {
+        _staticCells.Clear();
+
+        for (int i = 0; i < _sudokuController.StateController.State.StaticCells.Count; i++) 
+        {
+            _staticCells.Add(_sudokuController.StateController.State.StaticCells[i]);
+        }
+
         yield break;
     }
 
@@ -582,29 +665,239 @@ public class GridGenerator : MonoBehaviour
         yield break;
     }
 
+    private IEnumerator AssingCorrectValues()
+    {
+        for (int i = 0; i < _sudokuController.StateController.State.SolveCells.Count; i++)
+        {
+            Vector2Int newPosition = new Vector2Int(_sudokuController.StateController.State.SolveCells[i].x, _sudokuController.StateController.State.SolveCells[i].y);
+            _cellsViews[newPosition.x, newPosition.y].AssingValue(_sudokuController.StateController.State.Sudoku[(newPosition.y * 9) + newPosition.x]);
+            _cellsViews[newPosition.x, newPosition.y].SetInteractable(false);
+        }
+
+        yield break;
+    }
+
+    public void AddCellViewToChekList(CellView cellView) 
+    {
+        if (_cellsToCheck.Contains(cellView)) return;
+        _cellsToCheck.Add(cellView);
+    }
+
     public void CheckSudoku()
     {
         _errors = 0;
+        _sudokuController.StateController.State.CheckTries++;
+        _selectionGroupController.ClearSelection();
 
-        for (int x = 0; x < _cellsViews.GetLength(0); x++)
+        if (_sudokuController.StateController.State.CheckTries == 0 && AllValuesAssigned())
         {
-            for (int y = 0; y < _cellsViews.GetLength(1); y++)
+            if (CheckSolveCustomSudoku())
             {
-                if (_cellsViews[x, y].IsCorrect())
+                GetComponent<GameInstaller>().ActivateFinalResult();
+                return;
+            }
+        }
+        
+        for (int i = 0; i < _cellsToCheck.Count; i++)
+        {
+            if (_cellsToCheck[i].IsCorrect())
+            {
+                _cellsToCheck[i].SetInteractable(false);
+                _sudokuController.StateController.State.SolveCells.Add(_cellsToCheck[i].ViewPosition);
+
+                if (_sudokuController.RemoveSolveNumbers)
+                    CheckForSolveAllNumber(_cellsToCheck[i].Value);
+            }
+            else
+            {
+                if (_cellsToCheck[i].Value != 0)
                 {
-                    _cellsViews[x, y].SetInteractable(false);
-                    _selectionGroupController.RemoveCell();
-                }
-                else
-                {
-                    _cellsViews[x, y].AssingValue(0);
+                    _cellsToCheck[i].AssingValue(0);
                     _errors++;
                 }
             }
         }
 
-        if (_errors == 0)
-            GetComponent<GameInstaller>().GoMainMenu();
+        _cellsToCheck.Clear();
+
+        if (EndSudoku())
+        {
+            GetComponent<GameInstaller>().ActivateFinalResult();
+        }
+        else
+        {
+            if (_errors > 0)
+                _sudokuController.StateController.State.Errors += _errors;
+
+            GetComponent<GameInstaller>().SaveSudokuState();
+        }
+    }
+
+    private bool CheckSolveCustomSudoku()
+    {
+        for (int i = 0; i < _boxes.Count; i++)
+        {
+            _solveCheckerList = new List<int>()
+            {
+                1,2,3,4,5,6,7,8,9
+            };
+
+            for (int j = 0; j < _boxes[i].Length; j++)
+            {
+                Vector2Int positionToCheck = _boxes[i][j];
+                
+                if (!_cellsViews[positionToCheck.x, positionToCheck.y].Interactable)
+                {
+                    if (_solveCheckerList.Contains(_cellsViews[positionToCheck.x, positionToCheck.y].CorrectValue))
+                    {
+                        _solveCheckerList.Remove(_cellsViews[positionToCheck.x, positionToCheck.y].CorrectValue);
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (_solveCheckerList.Contains(_cellsViews[positionToCheck.x, positionToCheck.y].Value))
+                    {
+                        _solveCheckerList.Remove(_cellsViews[positionToCheck.x, positionToCheck.y].Value); 
+                    }
+                    else 
+                    {
+                        return false;
+                    }   
+                }
+            }
+        }
+
+        for (int x = 0; x < _cellsViews.GetLength(0); x++)
+        {
+            _solveCheckerList = new List<int>()
+            {
+                1,2,3,4,5,6,7,8,9
+            };
+
+            for (int y = 0; y < _cellsViews.GetLength(1); y++)
+            {
+                if (!_cellsViews[x, y].Interactable)
+                {
+                    if (_solveCheckerList.Contains(_cellsViews[x, y].CorrectValue))
+                    {
+                        _solveCheckerList.Remove(_cellsViews[x, y].CorrectValue);
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (_solveCheckerList.Contains(_cellsViews[x, y].Value))
+                    {
+                        _solveCheckerList.Remove(_cellsViews[x, y].Value);
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        for (int y = 0; y < _cellsViews.GetLength(1); y++)
+        {
+            _solveCheckerList = new List<int>()
+            {
+                1,2,3,4,5,6,7,8,9
+            };
+
+            for (int x = 0; x < _cellsViews.GetLength(0); x++)
+            {
+                if (!_cellsViews[x, y].Interactable)
+                {
+                    if (_solveCheckerList.Contains(_cellsViews[x, y].CorrectValue))
+                    {
+                        _solveCheckerList.Remove(_cellsViews[x, y].CorrectValue);
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (_solveCheckerList.Contains(_cellsViews[x, y].Value))
+                    {
+                        _solveCheckerList.Remove(_cellsViews[x, y].Value);
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private bool AllValuesAssigned()
+    {
+        for (int x = 0; x < _cellsViews.GetLength(0); x++)
+        {
+            for (int y = 0; y < _cellsViews.GetLength(1); y++)
+            {
+                if(_cellsViews[x, y].Value <= 0 || _cellsViews[x, y].Value > 9) 
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    private IEnumerator CheckForRemoveSelectionNumbers() 
+    {
+        for (int i = 1; i < 10; i++)
+        {
+            CheckForSolveAllNumber(i);
+        }
+
+        yield break;
+    }
+
+    private void CheckForSolveAllNumber(int value)
+    {
+        if (CheckIfSolveNumber(value))
+            _selectionGroupController.DeactivateNumber(value);
+    }
+
+    private bool EndSudoku()
+    {
+        for (int x = 0; x < _cellsViews.GetLength(0); x++)
+        {
+            for (int y = 0; y < _cellsViews.GetLength(1); y++)
+            {
+                if(!_cellsViews[x, y].IsCorrect())
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool CheckIfSolveNumber(int number)
+    {
+        foreach (Vector2Int[] box in _boxes)
+        {
+            foreach (Vector2Int position in box) 
+            {
+                if (_cellsViews[position.x, position.y].CorrectValue == number && !_cellsViews[position.x, position.y].IsCorrect())
+                    return false;
+            }
+        }
+
+        return true;
     }
 }
  

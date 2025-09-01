@@ -1,33 +1,36 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class Randomizer
 {
     private int _intResult;
     private float _floatResult;
+    private int _newIndex;
 
     public int GetRandomIndexFromList(int countListElements)
     {
-        int newIndex = 0;
+        _newIndex = Random.Range(0, countListElements);
 
-        newIndex = Random.Range(0, countListElements);
-
-        return newIndex;
+        return _newIndex;
     }
 
     public int GetRamdonInt(int min, int max)
     {
-        return UnityEngine.Random.Range(min, max);
+        return UnityEngine.Random.Range(min, max + 1);
+    }
+
+    public bool IsCritic(int criticalRate) 
+    {
+        return GetRamdonInt(0, 100) <= criticalRate;
     }
 
     public int GetRamdonIntWithException(int min, int max, int exception)
     {
-        _intResult = UnityEngine.Random.Range(min, max);
+        _intResult = UnityEngine.Random.Range(min, max + 1);
 
         while (_intResult == exception)
         {
-            _intResult = UnityEngine.Random.Range(min, max);
+            _intResult = UnityEngine.Random.Range(min, max + 1);
         }
 
         return _intResult;
@@ -70,5 +73,29 @@ public class Randomizer
         }
 
         return tempList;
+    }
+
+    public int GetRandomValueWithPercentage(List<int> values, List<int> percentages)
+    {
+        if (values.Count != percentages.Count)
+        {
+            Debug.Log("Values amount is different for percentage amount");
+            return 0;
+        }
+        
+        int randomPercentage = GetRamdonInt(1, 99);
+        int acummulatedPercentage = 0;
+
+        for (int i = 0; i < percentages.Count; i++) 
+        {
+            acummulatedPercentage += percentages[i];
+
+            if (acummulatedPercentage >= randomPercentage)
+            {
+                return values[i];
+            }
+        }
+
+        return 0;
     }
 }

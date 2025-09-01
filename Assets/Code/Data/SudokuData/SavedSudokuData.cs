@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 
 [System.Serializable]
-public class SavedData 
+public class SavedSudokuData
 {
     public List<int> NextSudoku = new List<int>();
 
-    public SavedData(List<int> nextSudoku)
+    public SavedSudokuData(List<int> nextSudoku)
     {
         NextSudoku.Clear();
 

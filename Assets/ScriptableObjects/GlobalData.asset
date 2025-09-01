@@ -13,4 +13,12 @@ MonoBehaviour:
   m_Name: GlobalData
   m_EditorClassIdentifier: 
   _sudokuData: {fileID: 11400000, guid: 5585246e60e016244940ad4cc0bb9e4d, type: 2}
-  _sceneData: {fileID: 11400000, guid: df8616c16ead9974ea52350f54a56069, type: 2}
+  _fadeDuration: 2
+  _basePoints: 100000
+  _checksMultiplier: 1
+  _errorsMultiplier: 6
+  _durationMultiplier: 0.01
+  _options:
+    Difficulty: 0
+    RemoveSolveNumbers: 1
+    SoundActive: 1

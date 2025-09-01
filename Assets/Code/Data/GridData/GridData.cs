@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "GridData", menuName = "ScriptableObjects/Data/GridData", order = 3)]
+[CreateAssetMenu(fileName = "GridData", menuName = "ScriptableObjects/Data/GridData", order = 2)]
 public class GridData : ScriptableObject
 {
     [SerializeField] private Vector2Int _gridSize;

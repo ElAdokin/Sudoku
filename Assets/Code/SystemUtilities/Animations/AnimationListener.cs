@@ -20,12 +20,12 @@ public class AnimationListener : MonoBehaviour
 
     private void FadeIn()
     {
-        _fader.SetFade(true, 1.5f);
+        _fader.SetFade(true, 1f);
     }
 
     public void FadeOut()
     {
-        _fader.SetFade(false, 1.5f);
+        _fader.SetFade(false, 1f);
     }
 
     private void Configure(IFader fader)
