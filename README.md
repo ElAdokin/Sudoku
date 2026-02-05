@@ -1,6 +1,7 @@
 # Sudoku Game (Unity WebGL)
 
 A browser-based Sudoku game developed with Unity and deployable via WebGL technology.
+For testing you can play it at https://nicolascasal.com
 
 ## 🎮 Features
 
