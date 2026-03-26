@@ -46,7 +46,7 @@ Alternatively, you can just click `Build` and place the resulting `.unitypackage
 1.  **Start the Game:** Open the generated HTML file (or navigate to the URL provided after building) in your compatible web browser.
 2.  **Select a Cell:** Click on the cell where you want to place a number.
 3.  **Enter a Number:** Select the number (1-9) on your screen. Some browsers also support clicking a number pad that appears on-screen (especially for touch devices).
-4.  **Check Numbers** Press "Check" button for know if numbers are correct.
+4.  **Check Numbers:** Press "Check" button for know if numbers are correct.
 5.  **Change Difficulty:** Select the desired difficulty level before or after starting the game (if the option is available).
 6.  **Save/Load:** Use the continue button to continue with your progress to the local browser storage.
 7.  **Win:** Fill the grid completely with correct numbers according to Sudoku rules and pres "Check" button (each row, column, and 3x3 box must contain all numbers 1-9 without repetition).
